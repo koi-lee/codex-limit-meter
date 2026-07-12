@@ -17,17 +17,26 @@
 ### 方式一：下载 DMG 安装（推荐）
 
 1. 前往 [Releases](../../releases) 下载最新的 `CodexLimitMeter.dmg`
-2. 双击挂载，将 `CodexLimitMeter.app` 拖到 `Applications` 文件夹
-3. 在 Launchpad 或 Applications 中双击启动
-4. 首次打开如出现下图的 Gatekeeper 拦截，先点击「完成」：
+2. 双击 DMG 挂载安装盘。**不要直接双击安装盘里的 App**，请将 `CodexLimitMeter` 图标拖到左侧 `Applications` 文件夹：
+
+   ![将 CodexLimitMeter 拖到 Applications 安装](docs/dmg-drag-to-applications.png)
+
+3. 打开 Finder 的「应用程序」文件夹，双击已安装的 `CodexLimitMeter.app`
+4. 首次打开如出现下图的 Gatekeeper 拦截，点击「完成」，**不要点击「移到废纸篓」**：
 
    ![macOS Gatekeeper 无法验证开发者提示](docs/gatekeeper-warning.png)
 
 5. 二选一解除拦截：
-   - **终端命令**（推荐）：确认 App 已拖入 Applications，然后在终端执行 `xattr -dr com.apple.quarantine /Applications/CodexLimitMeter.app`
+   - **终端命令**（推荐）：在终端执行：
+
+     ```bash
+     xattr -dr com.apple.quarantine "/Applications/CodexLimitMeter.app"
+     ```
+
+     如提示 `No such file`，说明第 2 步没有完成，请先将 App 拖到 Applications，不要对 DMG 里的 App 执行命令。
    - **系统设置**：前往 **系统设置 → 隐私与安全性** → 点击「仍要打开」
 
-6. **不需要重新安装。**命令执行完毕后不会自动启动 App，请回到 Applications 再双击 `CodexLimitMeter.app` 即可。两种方式都只需操作一次。
+6. 命令执行完毕后，回到 Finder 的「应用程序」文件夹，再次双击 `CodexLimitMeter.app` 即可。**不需要重新安装或重新下载。**
 
 ### 方式二：从源码编译
 
@@ -67,10 +76,10 @@ open dist/CodexLimitMeter.app
 
 **Q：首次打开提示「无法验证开发者」？**
 A：应用使用 ad-hoc 签名，非 App Store 分发。两种解决方式（任选其一，仅需一次）：
-- 确认 App 已拖入 Applications，然后在终端运行：`xattr -dr com.apple.quarantine /Applications/CodexLimitMeter.app`
+- 先将 App 从 DMG 拖到 Applications，再执行：`xattr -dr com.apple.quarantine "/Applications/CodexLimitMeter.app"`
 - 或前往 系统设置 → 隐私与安全性，点击「仍要打开」
 
-执行命令后无需重新安装；关闭警告弹窗，再从 Applications 双击 App 即可。
+如命令提示 `No such file`，说明 App 尚未拖到 Applications。命令成功后，再从「应用程序」打开 App，无需重新安装。
 
 **Q：悬浮窗显示「更新失败」？**
 A：请检查：① `codex` 命令是否可用 ② Codex 是否已登录 ③ 是否使用 ChatGPT 账号登录（非 API Key）。
