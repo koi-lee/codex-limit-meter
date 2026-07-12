@@ -17,7 +17,7 @@
 ### 方式一：下载 DMG 安装（推荐）
 
 1. 前往 [Releases](../../releases) 下载最新的 `CodexLimitMeter.dmg`
-2. 双击 DMG 挂载安装盘。**不要直接双击安装盘里的 App**，请将 `CodexLimitMeter` 图标拖到左侧 `Applications` 文件夹：
+2. 请将 `CodexLimitMeter` 图标拖到左侧 `Applications` 文件夹：
 
    ![将 CodexLimitMeter 拖到 Applications 安装](docs/dmg-drag-to-applications.png)
 
