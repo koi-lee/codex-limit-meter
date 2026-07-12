@@ -19,11 +19,15 @@
 1. 前往 [Releases](../../releases) 下载最新的 `CodexLimitMeter.dmg`
 2. 双击挂载，将 `CodexLimitMeter.app` 拖到 `Applications` 文件夹
 3. 在 Launchpad 或 Applications 中双击启动
-4. 首次打开如被 Gatekeeper 拦截，二选一：
+4. 首次打开如出现下图的 Gatekeeper 拦截，先点击「完成」：
+
+   ![macOS Gatekeeper 无法验证开发者提示](docs/gatekeeper-warning.png)
+
+5. 二选一解除拦截：
    - **终端命令**（推荐）：确认 App 已拖入 Applications，然后在终端执行 `xattr -dr com.apple.quarantine /Applications/CodexLimitMeter.app`
    - **系统设置**：前往 **系统设置 → 隐私与安全性** → 点击「仍要打开」
 
-   两种方式均仅需操作一次。
+6. **不需要重新安装。**命令执行完毕后不会自动启动 App，请回到 Applications 再双击 `CodexLimitMeter.app` 即可。两种方式都只需操作一次。
 
 ### 方式二：从源码编译
 
@@ -65,6 +69,8 @@ open dist/CodexLimitMeter.app
 A：应用使用 ad-hoc 签名，非 App Store 分发。两种解决方式（任选其一，仅需一次）：
 - 确认 App 已拖入 Applications，然后在终端运行：`xattr -dr com.apple.quarantine /Applications/CodexLimitMeter.app`
 - 或前往 系统设置 → 隐私与安全性，点击「仍要打开」
+
+执行命令后无需重新安装；关闭警告弹窗，再从 Applications 双击 App 即可。
 
 **Q：悬浮窗显示「更新失败」？**
 A：请检查：① `codex` 命令是否可用 ② Codex 是否已登录 ③ 是否使用 ChatGPT 账号登录（非 API Key）。
