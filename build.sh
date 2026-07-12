@@ -78,6 +78,8 @@ cat > "$BUILD_DIR/$APP_NAME.app/Contents/Info.plist" << 'PLIST'
     <string>1</string>
     <key>LSMinimumSystemVersion</key>
     <string>13.0</string>
+    <key>LSMultipleInstancesProhibited</key>
+    <true/>
     <key>LSUIElement</key>
     <false/>
     <key>NSHighResolutionCapable</key>
