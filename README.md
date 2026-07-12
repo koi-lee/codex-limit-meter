@@ -20,7 +20,7 @@
 2. 双击挂载，将 `CodexLimitMeter.app` 拖到 `Applications` 文件夹
 3. 在 Launchpad 或 Applications 中双击启动
 4. 首次打开如被 Gatekeeper 拦截，二选一：
-   - **终端命令**（推荐）：`xattr -cr /Applications/CodexLimitMeter.app`
+   - **终端命令**（推荐）：确认 App 已拖入 Applications，然后在终端执行 `xattr -dr com.apple.quarantine /Applications/CodexLimitMeter.app`
    - **系统设置**：前往 **系统设置 → 隐私与安全性** → 点击「仍要打开」
 
    两种方式均仅需操作一次。
@@ -63,7 +63,7 @@ open dist/CodexLimitMeter.app
 
 **Q：首次打开提示「无法验证开发者」？**
 A：应用使用 ad-hoc 签名，非 App Store 分发。两种解决方式（任选其一，仅需一次）：
-- 终端运行：`xattr -cr /Applications/CodexLimitMeter.app`
+- 确认 App 已拖入 Applications，然后在终端运行：`xattr -dr com.apple.quarantine /Applications/CodexLimitMeter.app`
 - 或前往 系统设置 → 隐私与安全性，点击「仍要打开」
 
 **Q：悬浮窗显示「更新失败」？**
