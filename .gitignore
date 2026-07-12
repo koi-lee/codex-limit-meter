@@ -1,0 +1,15 @@
+# Build output
+dist/
+
+# SPM build cache
+.build/
+.swiftpm/
+
+# Xcode
+xcuserdata/
+DerivedData/
+*.xcodeproj
+*.xcworkspace
+
+# macOS
+.DS_Store
