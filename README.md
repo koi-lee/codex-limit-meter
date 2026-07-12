@@ -67,7 +67,7 @@ A：应用使用 ad-hoc 签名，非 App Store 分发。两种解决方式（任
 - 或前往 系统设置 → 隐私与安全性，点击「仍要打开」
 
 **Q：悬浮窗显示「更新失败」？**
-A：请检查：① `codex` 命令是否可用 ② Codex 是否已登录 ③ 是否使用 ChatGPT 账号登录（非 API Key）④ 在系统设置中允许 CodexLimitMeter 完全磁盘访问权限。
+A：请检查：① `codex` 命令是否可用 ② Codex 是否已登录 ③ 是否使用 ChatGPT 账号登录（非 API Key）。
 
 **Q：App Server 会一直后台运行吗？**
 A：悬浮窗退出时会自动终止 app-server 子进程，不会残留。
