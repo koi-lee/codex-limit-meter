@@ -1,6 +1,8 @@
 # Codex Limit Meter
 
 > Mac 桌面 Codex 额度悬浮窗 — 实时监控 5 小时窗口和周用量
+>
+> A macOS desktop widget for monitoring Codex rate limits in real time — 5-hour window & weekly usage tracking.
 
 一个常驻 Mac 桌面的悬浮窗，自动获取 Codex 官方配额数据，支持拖拽、颜色预警、套餐显示。
 
