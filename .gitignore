@@ -1,3 +1,6 @@
+# Build output
+dist/
+
 # SPM build cache
 .build/
 .swiftpm/
