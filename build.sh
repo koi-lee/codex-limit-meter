@@ -86,6 +86,10 @@ cat > "$BUILD_DIR/$APP_NAME.app/Contents/Info.plist" << 'PLIST'
 </plist>
 PLIST
 
+# Remove local download/source metadata before signing and packaging.
+# This prevents quarantine and provenance URLs from leaking into release builds.
+xattr -cr "$BUILD_DIR/$APP_NAME.app"
+
 # Sign ad-hoc
 codesign --force --deep --sign - "$BUILD_DIR/$APP_NAME.app" 2>/dev/null || true
 
