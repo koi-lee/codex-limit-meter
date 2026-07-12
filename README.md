@@ -4,6 +4,8 @@
 
 一个常驻 Mac 桌面的悬浮窗，自动获取 Codex 官方配额数据，支持拖拽、颜色预警、套餐显示。
 
+![Codex Limit Meter 悬浮窗截图](docs/screenshot.png)
+
 ## 系统要求
 
 - macOS 13.0+（Ventura 及以上）
