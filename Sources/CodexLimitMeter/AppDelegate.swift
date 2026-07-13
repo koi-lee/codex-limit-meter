@@ -1,5 +1,6 @@
 import Cocoa
 import SwiftUI
+import Combine
 
 @main
 struct CodexLimitMeterApp: App {
@@ -17,6 +18,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var tracker = UsageTracker()
     var timer: Timer?
     var statusItem: NSStatusItem?
+    var usageCancellable: AnyCancellable?
     
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Show in Dock and menu bar (regular app)
@@ -48,6 +50,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
         window.contentView = hostingView
         window.makeKeyAndOrderFront(nil)
+
+        usageCancellable = tracker.$usage
+            .receive(on: RunLoop.main)
+            .sink { [weak self] usage in
+                self?.resizeWindow(for: usage)
+            }
         
         // Restore saved position
         restoreWindowPosition()
@@ -84,6 +92,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let defaults = UserDefaults.standard
         defaults.set(window.frame.origin.x, forKey: "windowX")
         defaults.set(window.frame.origin.y, forKey: "windowY")
+    }
+
+    private func resizeWindow(for usage: UsageData) {
+        guard window != nil else { return }
+        let visibleWindowCount = [usage.primary, usage.secondary].compactMap { $0 }.count
+        let targetHeight: CGFloat = usage.dataSource == .loading || visibleWindowCount > 1 ? 172 : 125
+        guard window.frame.height != targetHeight else { return }
+
+        var frame = window.frame
+        let topEdge = frame.maxY
+        frame.size.height = targetHeight
+        frame.origin.y = topEdge - targetHeight
+        window.setFrame(frame, display: true, animate: true)
     }
     
     /// 查找资源文件路径，兼容两种运行模式：
@@ -126,11 +147,23 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         
+        rebuildStatusMenu()
+    }
+
+    private func rebuildStatusMenu() {
+        let isChinese = tracker.language == .chinese
         let menu = NSMenu()
-        menu.addItem(NSMenuItem(title: "显示悬浮窗", action: #selector(showWindow), keyEquivalent: ""))
-        menu.addItem(NSMenuItem(title: "刷新数据", action: #selector(refreshData), keyEquivalent: "r"))
+        menu.addItem(NSMenuItem(title: isChinese ? "显示悬浮窗" : "Show Window", action: #selector(showWindow), keyEquivalent: ""))
+        menu.addItem(NSMenuItem(title: isChinese ? "刷新数据" : "Refresh", action: #selector(refreshData), keyEquivalent: "r"))
+
+        menu.addItem(NSMenuItem(
+            title: isChinese ? "切换到 English" : "Switch to 中文",
+            action: #selector(toggleLanguage),
+            keyEquivalent: ""
+        ))
+
         menu.addItem(NSMenuItem.separator())
-        menu.addItem(NSMenuItem(title: "退出", action: #selector(quitApp), keyEquivalent: "q"))
+        menu.addItem(NSMenuItem(title: isChinese ? "退出" : "Quit", action: #selector(quitApp), keyEquivalent: "q"))
         
         statusItem?.menu = menu
     }
@@ -141,6 +174,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     @objc func refreshData() {
         tracker.refresh()
+    }
+
+    @objc func toggleLanguage() {
+        tracker.setLanguage(tracker.language == .chinese ? .english : .chinese)
+        rebuildStatusMenu()
     }
     
     @objc func quitApp() {

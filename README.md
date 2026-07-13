@@ -1,12 +1,18 @@
 # Codex Limit Meter
 
-> Mac 桌面 Codex 额度悬浮窗 — 实时监控 5 小时窗口和周用量
->
-> A macOS desktop widget for monitoring Codex rate limits in real time — 5-hour window & weekly usage tracking.
+[中文](README.md) | [English](README_EN.md)
 
-一个常驻 Mac 桌面的悬浮窗，自动获取 Codex 官方配额数据，支持拖拽、颜色预警、套餐显示。
+> Mac 桌面 Codex 额度悬浮窗 — 实时监控当前账号可用的额度窗口
+>
+> A macOS desktop widget for monitoring the Codex rate-limit windows currently available to your account.
+
+一个常驻 Mac 桌面的悬浮窗，自动获取 Codex 官方配额数据，支持拖拽、颜色预警、套餐显示。应用会按照服务端实际返回的窗口时长识别短期和周额度；如果官方临时取消某个额度窗口，对应额度行会自动隐藏，不会把周额度误显示为“168 小时额度”。
 
 ![Codex Limit Meter 悬浮窗截图](docs/screenshot.png)
+
+仅展示周额度时：
+
+![Codex Limit Meter 仅展示周额度](docs/screenshot-weekly-only.png)
 
 ## 系统要求
 
@@ -70,6 +76,7 @@ open dist/CodexLimitMeter.app
 | 拖拽窗口 | 点击深色背景区域拖拽到任意位置 |
 | 刷新按钮 | 右上角 ↻ 立即刷新 |
 | 菜单栏图标 | 显示窗口 / 刷新 / 退出 |
+| 语言切换 | 菜单栏图标 → 切换到 English / Switch to 中文 |
 | ⌘Q | 快捷键退出 |
 
 进度条颜色基于**剩余比例**：绿色（>40% 正常）/ 橙色（20-40% 接近上限）/ 红色（<20% 即将耗尽）。
@@ -85,6 +92,9 @@ A：应用使用 ad-hoc 签名，非 App Store 分发。两种解决方式（任
 
 **Q：悬浮窗显示「更新失败」？**
 A：请检查：① `codex` 命令是否可用 ② Codex 是否已登录 ③ 是否使用 ChatGPT 账号登录（非 API Key）。
+
+**Q：为什么没有显示 5 小时额度？**
+A：这表示 Codex 服务端当前没有返回 5 小时额度窗口，例如官方针对部分套餐临时取消了该限制。应用只展示实际存在的额度窗口；如果服务端以后恢复 5 小时窗口，该行会自动重新出现，无需修改配置或重新安装。
 
 **Q：App Server 会一直后台运行吗？**
 A：悬浮窗退出时会自动终止 app-server 子进程，不会残留。

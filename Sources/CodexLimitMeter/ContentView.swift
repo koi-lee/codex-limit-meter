@@ -4,6 +4,18 @@ import AppKit
 struct ContentView: View {
     @EnvironmentObject var tracker: UsageTracker
 
+    private var showPrimary: Bool {
+        tracker.usage.primary != nil || tracker.usage.dataSource == .loading
+    }
+
+    private var showSecondary: Bool {
+        tracker.usage.secondary != nil || tracker.usage.dataSource == .loading
+    }
+
+    private var contentHeight: CGFloat {
+        showPrimary && showSecondary ? 172 : 125
+    }
+
     var body: some View {
         ZStack {
             // Background
@@ -39,7 +51,7 @@ struct ContentView: View {
                             .foregroundColor(.gray)
                     }
                     .buttonStyle(PlainButtonStyle())
-                    .help("刷新数据")
+                    .help(tracker.language == .chinese ? "刷新数据" : "Refresh")
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 12)
@@ -52,34 +64,39 @@ struct ContentView: View {
                     .padding(.horizontal, 12)
                     .padding(.vertical, 4)
 
-                // Primary window (5-hour)
-                UsageSection(
-                    title: tracker.usage.primaryWindowLabel + "额度",
-                    usedPercent: tracker.usage.primaryUsedPercent,
-                    remainingPercent: tracker.usage.primaryRemainingPercent,
-                    resetFormatted: tracker.usage.primaryResetFormatted,
-                    hasData: tracker.usage.primary != nil,
-                    isLoading: tracker.usage.dataSource == .loading
-                )
-                .padding(.horizontal, 16)
+                if showPrimary {
+                    UsageSection(
+                        title: windowTitle(tracker.usage.primaryWindowLabel(language: tracker.language)),
+                        usedPercent: tracker.usage.primaryUsedPercent,
+                        remainingPercent: tracker.usage.primaryRemainingPercent,
+                        resetFormatted: tracker.usage.primaryResetFormatted(language: tracker.language),
+                        hasData: tracker.usage.primary != nil,
+                        isLoading: tracker.usage.dataSource == .loading,
+                        language: tracker.language
+                    )
+                    .padding(.horizontal, 16)
+                }
 
-                // Divider
-                Rectangle()
-                    .fill(Color.white.opacity(0.08))
-                    .frame(height: 1)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 4)
+                if showPrimary && showSecondary {
+                    Rectangle()
+                        .fill(Color.white.opacity(0.08))
+                        .frame(height: 1)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 4)
+                }
 
-                // Secondary window (weekly)
-                UsageSection(
-                    title: tracker.usage.secondaryWindowLabel + "额度",
-                    usedPercent: tracker.usage.secondaryUsedPercent,
-                    remainingPercent: tracker.usage.secondaryRemainingPercent,
-                    resetFormatted: tracker.usage.secondaryResetFormatted,
-                    hasData: tracker.usage.secondary != nil,
-                    isLoading: tracker.usage.dataSource == .loading
-                )
-                .padding(.horizontal, 16)
+                if showSecondary {
+                    UsageSection(
+                        title: windowTitle(tracker.usage.secondaryWindowLabel(language: tracker.language)),
+                        usedPercent: tracker.usage.secondaryUsedPercent,
+                        remainingPercent: tracker.usage.secondaryRemainingPercent,
+                        resetFormatted: tracker.usage.secondaryResetFormatted(language: tracker.language),
+                        hasData: tracker.usage.secondary != nil,
+                        isLoading: tracker.usage.dataSource == .loading,
+                        language: tracker.language
+                    )
+                    .padding(.horizontal, 16)
+                }
 
                 Spacer()
 
@@ -107,7 +124,8 @@ struct ContentView: View {
                 .padding(.bottom, 10)
             }
         }
-        .frame(width: 260, height: 172)
+        .frame(width: 260, height: contentHeight)
+        .animation(.easeInOut(duration: 0.2), value: contentHeight)
         .clipShape(RoundedRectangle(cornerRadius: 20))
     }
 
@@ -127,14 +145,20 @@ struct ContentView: View {
     private var footerText: String {
         switch tracker.usage.dataSource {
         case .loading:
-            return "正在更新…"
+            return tracker.language == .chinese ? "正在更新…" : "Updating…"
         case .appServer:
-            return "已同步 · \(timeString(from: tracker.usage.lastUpdated))"
+            let prefix = tracker.language == .chinese ? "已同步" : "Synced"
+            return "\(prefix) · \(timeString(from: tracker.usage.lastUpdated))"
         case .config:
-            return "手动配置 · \(timeString(from: tracker.usage.lastUpdated))"
+            let prefix = tracker.language == .chinese ? "手动配置" : "Manual config"
+            return "\(prefix) · \(timeString(from: tracker.usage.lastUpdated))"
         case .error:
-            return "更新失败 · 点击重试"
+            return tracker.language == .chinese ? "更新失败 · 点击重试" : "Update failed · Click to retry"
         }
+    }
+
+    private func windowTitle(_ label: String) -> String {
+        tracker.language == .chinese ? label + "额度" : label + " limit"
     }
 
     private func timeString(from date: Date) -> String {
@@ -151,14 +175,16 @@ struct UsageSection: View {
     let resetFormatted: String
     let hasData: Bool
     let isLoading: Bool
+    let language: AppLanguage
 
-    init(title: String, usedPercent: Double, remainingPercent: Double, resetFormatted: String, hasData: Bool, isLoading: Bool = false) {
+    init(title: String, usedPercent: Double, remainingPercent: Double, resetFormatted: String, hasData: Bool, isLoading: Bool = false, language: AppLanguage) {
         self.title = title
         self.usedPercent = usedPercent
         self.remainingPercent = remainingPercent
         self.resetFormatted = resetFormatted
         self.hasData = hasData
         self.isLoading = isLoading
+        self.language = language
     }
 
     // Color based on REMAINING percentage
@@ -185,11 +211,13 @@ struct UsageSection: View {
                 Spacer()
 
                 if hasData {
-                    Text("剩余 \(Int(remainingPercent * 100))%")
+                    Text(language == .chinese
+                        ? "剩余 \(Int(remainingPercent * 100))%"
+                        : "\(Int(remainingPercent * 100))% left")
                         .font(.system(size: 14, weight: .semibold, design: .rounded))
                         .foregroundColor(barColor)
                 } else if isLoading {
-                    Text("加载中...")
+                    Text(language == .chinese ? "加载中..." : "Loading...")
                         .font(.system(size: 12, weight: .medium, design: .rounded))
                         .foregroundColor(Color(hex: 0x0A84FF).opacity(0.8))
                 } else {
@@ -237,7 +265,9 @@ struct UsageSection: View {
             // Row 3: used % (left) + reset time (right)
             HStack {
                 if hasData {
-                    Text("已用 \(Int(usedPercent * 100))%")
+                    Text(language == .chinese
+                        ? "已用 \(Int(usedPercent * 100))%"
+                        : "\(Int(usedPercent * 100))% used")
                         .font(.system(size: 10, weight: .regular))
                         .foregroundColor(Color.gray.opacity(0.5))
                 }
