@@ -14,6 +14,7 @@ struct CodexLimitMeterApp: App {
 }
 
 class AppDelegate: NSObject, NSApplicationDelegate {
+    private let showOnAllDesktopsKey = "showOnAllDesktops"
     var window: FloatingWindow!
     var tracker = UsageTracker()
     var timer: Timer?
@@ -37,10 +38,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
         window = FloatingWindow(
             contentRect: NSRect(x: 100, y: 100, width: 260, height: 172),
-            styleMask: [.borderless, .fullSizeContentView],
+            styleMask: [.borderless, .nonactivatingPanel, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
+        applyDesktopVisibilityPreference()
         
         let hostingView = NSHostingView(rootView: contentView)
         hostingView.wantsLayer = true
@@ -156,6 +158,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(NSMenuItem(title: isChinese ? "显示悬浮窗" : "Show Window", action: #selector(showWindow), keyEquivalent: ""))
         menu.addItem(NSMenuItem(title: isChinese ? "刷新数据" : "Refresh", action: #selector(refreshData), keyEquivalent: "r"))
 
+        let desktopItem = NSMenuItem(
+            title: isChinese ? "在所有桌面显示" : "Show on All Desktops",
+            action: #selector(toggleDesktopVisibility),
+            keyEquivalent: ""
+        )
+        desktopItem.state = showsOnAllDesktops ? .on : .off
+        menu.addItem(desktopItem)
+
         menu.addItem(NSMenuItem(
             title: isChinese ? "切换到 English" : "Switch to 中文",
             action: #selector(toggleLanguage),
@@ -180,22 +190,45 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         tracker.setLanguage(tracker.language == .chinese ? .english : .chinese)
         rebuildStatusMenu()
     }
+
+    @objc func toggleDesktopVisibility() {
+        UserDefaults.standard.set(!showsOnAllDesktops, forKey: showOnAllDesktopsKey)
+        applyDesktopVisibilityPreference()
+        rebuildStatusMenu()
+    }
+
+    private var showsOnAllDesktops: Bool {
+        UserDefaults.standard.object(forKey: showOnAllDesktopsKey) as? Bool ?? true
+    }
+
+    private func applyDesktopVisibilityPreference() {
+        if showsOnAllDesktops {
+            window.collectionBehavior = [.canJoinAllSpaces, .canJoinAllApplications]
+        } else {
+            window.collectionBehavior = [.moveToActiveSpace, .canJoinAllApplications]
+        }
+    }
     
     @objc func quitApp() {
         NSApp.terminate(nil)
     }
 }
 
-class FloatingWindow: NSWindow {
+class FloatingWindow: NSPanel {
     override init(contentRect: NSRect, styleMask style: NSWindow.StyleMask, backing backingStoreType: NSWindow.BackingStoreType, defer flag: Bool) {
         super.init(contentRect: contentRect, styleMask: style, backing: backingStoreType, defer: flag)
         
         self.isMovableByWindowBackground = true
+        self.isFloatingPanel = true
+        self.becomesKeyOnlyIfNeeded = true
+        self.hidesOnDeactivate = false
         self.level = .floating
         self.backgroundColor = .clear
         self.hasShadow = true
         self.isOpaque = false
-        self.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        // Allow this floating overlay to move across displays and join Spaces,
+        // full-screen apps, and Stage Manager groups owned by other apps.
+        self.collectionBehavior = [.canJoinAllSpaces, .canJoinAllApplications]
         self.isReleasedWhenClosed = false
         
         // Ensure contentView layer is transparent and clipped to corner radius
