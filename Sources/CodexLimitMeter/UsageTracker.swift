@@ -4,10 +4,29 @@ import AppKit
 
 // MARK: - Data Models
 
+enum AppLanguage: String {
+    case chinese
+    case english
+}
+
 struct RateLimitWindow {
     let usedPercent: Int          // 0-100, percentage already used
     let windowDurationMins: Int   // e.g. 300 for 5h, 10080 for 7d
     let resetsAt: Int64           // Unix timestamp in seconds
+}
+
+func normalizeRateLimitWindows(
+    _ first: RateLimitWindow?,
+    _ second: RateLimitWindow?
+) -> (primary: RateLimitWindow?, secondary: RateLimitWindow?) {
+    let windows = [first, second].compactMap { $0 }
+    let shortWindow = windows
+        .filter { $0.windowDurationMins < 1_440 }
+        .min { $0.windowDurationMins < $1.windowDurationMins }
+    let longWindow = windows
+        .filter { $0.windowDurationMins >= 1_440 }
+        .max { $0.windowDurationMins < $1.windowDurationMins }
+    return (shortWindow, longWindow)
 }
 
 struct UsageData {
@@ -49,47 +68,49 @@ struct UsageData {
     }
 
     // Formatted reset time
-    var primaryResetFormatted: String {
+    func primaryResetFormatted(language: AppLanguage) -> String {
         guard let p = primary else { return "" }
-        return formatResetTime(p.resetsAt, durationMins: p.windowDurationMins)
+        return formatResetTime(p.resetsAt, durationMins: p.windowDurationMins, language: language)
     }
 
-    var secondaryResetFormatted: String {
+    func secondaryResetFormatted(language: AppLanguage) -> String {
         guard let s = secondary else { return "" }
-        return formatResetTime(s.resetsAt, durationMins: s.windowDurationMins)
+        return formatResetTime(s.resetsAt, durationMins: s.windowDurationMins, language: language)
     }
 
-    var primaryWindowLabel: String {
-        guard let p = primary else { return "5小时" }
+    func primaryWindowLabel(language: AppLanguage) -> String {
+        guard let p = primary else { return language == .chinese ? "5小时" : "5-hour" }
         let hours = p.windowDurationMins / 60
-        return "\(hours)小时"
+        return language == .chinese ? "\(hours)小时" : "\(hours)-hour"
     }
 
-    var secondaryWindowLabel: String {
-        guard let s = secondary else { return "1周" }
+    func secondaryWindowLabel(language: AppLanguage) -> String {
+        guard let s = secondary else { return language == .chinese ? "1周" : "Weekly" }
         let days = s.windowDurationMins / 1440
-        if days == 7 { return "1周" }
-        return "\(days)天"
+        if days == 7 { return language == .chinese ? "1周" : "Weekly" }
+        return language == .chinese ? "\(days)天" : "\(days)-day"
     }
 
-    private func formatResetTime(_ timestamp: Int64, durationMins: Int) -> String {
+    private func formatResetTime(_ timestamp: Int64, durationMins: Int, language: AppLanguage) -> String {
         let date = Date(timeIntervalSince1970: TimeInterval(timestamp))
         let now = Date()
         let interval = date.timeIntervalSince(now)
 
-        if interval <= 0 { return "已重置" }
+        if interval <= 0 { return language == .chinese ? "已重置" : "Reset" }
 
         let formatter = DateFormatter()
 
         if durationMins <= 300 {
             // Short window — show time HH:mm
             formatter.dateFormat = "HH:mm"
-            return "重置于 \(formatter.string(from: date))"
+            let time = formatter.string(from: date)
+            return language == .chinese ? "重置于 \(time)" : "Resets at \(time)"
         } else {
             // Long window — show date
-            formatter.locale = Locale(identifier: "zh_CN")
-            formatter.dateFormat = "M月d日"
-            return "重置于 \(formatter.string(from: date))"
+            formatter.locale = Locale(identifier: language == .chinese ? "zh_CN" : "en_US")
+            formatter.dateFormat = language == .chinese ? "M月d日" : "MMM d"
+            let dateText = formatter.string(from: date)
+            return language == .chinese ? "重置于 \(dateText)" : "Resets on \(dateText)"
         }
     }
 }
@@ -97,6 +118,12 @@ struct UsageData {
 // MARK: - UsageTracker
 
 class UsageTracker: ObservableObject {
+    @Published var language: AppLanguage {
+        didSet {
+            UserDefaults.standard.set(language.rawValue, forKey: "appLanguage")
+        }
+    }
+
     @Published var usage: UsageData = UsageData(
         primary: nil,
         secondary: nil,
@@ -118,9 +145,16 @@ class UsageTracker: ObservableObject {
     private let lock = NSLock()
     private var refreshTimer: Timer?
     private var isInitialized = false
+    private var latestRateLimits: [String: Any] = [:]
 
     init() {
+        let savedLanguage = UserDefaults.standard.string(forKey: "appLanguage")
+        language = AppLanguage(rawValue: savedLanguage ?? "") ?? .chinese
         startAppServer()
+    }
+
+    func setLanguage(_ language: AppLanguage) {
+        self.language = language
     }
 
     deinit {
@@ -309,9 +343,10 @@ class UsageTracker: ObservableObject {
     private func handleNotification(method: String, params: [String: Any]) {
         switch method {
         case "account/rateLimits/updated":
-            // Live update notification
+            // Notifications are sparse. Merge them into the latest full snapshot
+            // before classifying the windows.
             if let rateLimits = params["rateLimits"] as? [String: Any] {
-                applyRateLimits(rateLimits)
+                applyRateLimits(rateLimits, isPartialUpdate: true)
             }
         default:
             break // Ignore other notifications
@@ -351,16 +386,27 @@ class UsageTracker: ObservableObject {
             }
 
             if let rateLimits = result["rateLimits"] as? [String: Any] {
-                self?.applyRateLimits(rateLimits)
+                self?.applyRateLimits(rateLimits, isPartialUpdate: false)
             }
         }
     }
 
-    private func applyRateLimits(_ rateLimits: [String: Any]) {
-        let primary = parseWindow(rateLimits["primary"] as? [String: Any])
-        let secondary = parseWindow(rateLimits["secondary"] as? [String: Any])
-        let planType = rateLimits["planType"] as? String
-        let credits = rateLimits["credits"] as? [String: Any]
+    private func applyRateLimits(_ rateLimits: [String: Any], isPartialUpdate: Bool) {
+        latestRateLimits = isPartialUpdate
+            ? mergeRateLimits(latestRateLimits, with: rateLimits)
+            : rateLimits
+
+        let serverPrimary = parseWindow(
+            latestRateLimits["primary"] as? [String: Any],
+            fallbackDurationMins: 300
+        )
+        let serverSecondary = parseWindow(
+            latestRateLimits["secondary"] as? [String: Any],
+            fallbackDurationMins: 10_080
+        )
+        let (primary, secondary) = normalizeRateLimitWindows(serverPrimary, serverSecondary)
+        let planType = latestRateLimits["planType"] as? String
+        let credits = latestRateLimits["credits"] as? [String: Any]
         let hasCredits = credits?["hasCredits"] as? Bool ?? false
         let balance = credits?["balance"] as? String
 
@@ -378,16 +424,32 @@ class UsageTracker: ObservableObject {
         }
     }
 
-    private func parseWindow(_ dict: [String: Any]?) -> RateLimitWindow? {
+    private func parseWindow(_ dict: [String: Any]?, fallbackDurationMins: Int) -> RateLimitWindow? {
         guard let dict = dict else { return nil }
         guard let usedPercent = dict["usedPercent"] as? Int else { return nil }
-        let durationMins = dict["windowDurationMins"] as? Int ?? 300
+        let durationMins = dict["windowDurationMins"] as? Int ?? fallbackDurationMins
         let resetsAt = Int64(dict["resetsAt"] as? Int ?? 0)
         return RateLimitWindow(
             usedPercent: usedPercent,
             windowDurationMins: durationMins,
             resetsAt: resetsAt
         )
+    }
+
+    private func mergeRateLimits(
+        _ current: [String: Any],
+        with update: [String: Any]
+    ) -> [String: Any] {
+        var merged = current
+        for (key, value) in update {
+            if let existingObject = merged[key] as? [String: Any],
+               let updatedObject = value as? [String: Any] {
+                merged[key] = mergeRateLimits(existingObject, with: updatedObject)
+            } else {
+                merged[key] = value
+            }
+        }
+        return merged
     }
 
     // MARK: - Refresh
