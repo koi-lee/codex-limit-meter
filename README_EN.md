@@ -66,8 +66,9 @@ After launch:
 |---|---|
 | Drag the window | Drag the dark background to move the widget |
 | Refresh button | Refresh quota data immediately |
-| Menu bar icon | Show the window, refresh data, change language, or quit |
+| Menu bar icon | Show the window, refresh data, control desktop visibility, change language, or quit |
 | Language | Menu bar icon → Switch to English / Switch to 中文 |
+| Desktop visibility | Menu bar icon → toggle **Show on All Desktops**; enabled by default and remembered after restart |
 | `⌘Q` | Quit the app |
 
 Progress colors are based on the remaining quota: green above 40%, orange from 20% to 40%, and red below 20%.
@@ -100,6 +101,14 @@ Check that:
 ### Why does macOS say the developer cannot be verified?
 
 Current releases use ad-hoc signing and are not distributed through the Mac App Store. Install the app only from a source you trust, then use the quarantine command or **Open Anyway** procedure described above.
+
+### Can I move the widget to an external display or another app's full-screen Space?
+
+Yes. The floating window can move across displays and appear alongside other apps in full-screen Spaces and Stage Manager groups.
+
+### How can I keep the widget on only one macOS desktop?
+
+Open the menu bar menu and turn off **Show on All Desktops**. Turn it on again to make the widget visible across every desktop. The app remembers this choice after restart.
 
 ## Development
 
