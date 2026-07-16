@@ -26,8 +26,9 @@ Weekly limit only:
 
 1. Download `CodexLimitMeter.dmg` from [Releases](../../releases).
 2. Open the DMG and drag `CodexLimitMeter` into the Applications folder.
-3. Open Finder → Applications and launch `CodexLimitMeter.app`.
-4. If macOS blocks the app because the developer cannot be verified, choose one of these options:
+3. When copying finishes, eject `Codex Limit Meter` from the Finder sidebar. If more than one disk is listed, eject each one.
+4. Open Finder → Applications and launch `CodexLimitMeter.app`. Do not run the copy inside the DMG.
+5. If macOS blocks the app because the developer cannot be verified, choose one of these options:
 
    ```bash
    xattr -dr com.apple.quarantine "/Applications/CodexLimitMeter.app"
@@ -101,6 +102,10 @@ Check that:
 ### Why does macOS say the developer cannot be verified?
 
 Current releases use ad-hoc signing and are not distributed through the Mac App Store. Install the app only from a source you trust, then use the quarantine command or **Open Anyway** procedure described above.
+
+### Why are multiple “Codex Limit Meter” disks listed in Finder?
+
+Each opened DMG mounts a read-only installation disk. Opening additional copies before ejecting earlier ones creates multiple entries. Eject every `Codex Limit Meter` disk from the Finder sidebar after installation, then launch the app from Applications.
 
 ### Can I move the widget to an external display or another app's full-screen Space?
 
