@@ -29,12 +29,13 @@
 
    ![将 CodexLimitMeter 拖到 Applications 安装](docs/dmg-drag-to-applications.png)
 
-3. 打开 Finder 的「应用程序」文件夹，双击已安装的 `CodexLimitMeter.app`
-4. 首次打开如出现下图的 Gatekeeper 拦截，点击「完成」，**不要点击「移到废纸篓」**：
+3. 复制完成后，在 Finder 左侧点击 `Codex Limit Meter` 旁的推出按钮。若左侧已有多个同名磁盘，请逐个推出
+4. 打开 Finder 的「应用程序」文件夹，双击已安装的 `CodexLimitMeter.app`。不要直接运行 DMG 里的 App
+5. 首次打开如出现下图的 Gatekeeper 拦截，点击「完成」，**不要点击「移到废纸篓」**：
 
    ![macOS Gatekeeper 无法验证开发者提示](docs/gatekeeper-warning.png)
 
-5. 二选一解除拦截：
+6. 二选一解除拦截：
    - **终端命令**（推荐）：在终端执行：
 
      ```bash
@@ -44,7 +45,7 @@
      如提示 `No such file`，说明第 2 步没有完成，请先将 App 拖到 Applications，不要对 DMG 里的 App 执行命令。
    - **系统设置**：前往 **系统设置 → 隐私与安全性** → 点击「仍要打开」
 
-6. 命令执行完毕后，回到 Finder 的「应用程序」文件夹，再次双击 `CodexLimitMeter.app` 即可。**不需要重新安装或重新下载。**
+7. 命令执行完毕后，回到 Finder 的「应用程序」文件夹，再次双击 `CodexLimitMeter.app` 即可。**不需要重新安装或重新下载。**
 
 ### 方式二：从源码编译
 
@@ -90,6 +91,9 @@ A：应用使用 ad-hoc 签名，非 App Store 分发。两种解决方式（任
 - 或前往 系统设置 → 隐私与安全性，点击「仍要打开」
 
 如命令提示 `No such file`，说明 App 尚未拖到 Applications。命令成功后，再从「应用程序」打开 App，无需重新安装。
+
+**Q：Finder 左侧为什么出现多个「Codex Limit Meter」磁盘？**
+A：每次打开一份 DMG 都会挂载一个只读安装磁盘。安装完成后没有推出、又重复打开其他 DMG，就会出现多个同名项目。请在 Finder 左侧逐个点击推出按钮；应用以后应从「应用程序」文件夹启动。
 
 **Q：悬浮窗显示「更新失败」？**
 A：请检查：① `codex` 命令是否可用 ② Codex 是否已登录 ③ 是否使用 ChatGPT 账号登录（非 API Key）。

@@ -9,6 +9,88 @@ enum AppLanguage: String {
     case english
 }
 
+enum AppServerError {
+    case codexNotFound
+    case launchFailed
+}
+
+func locateCodexBinary(
+    homeDirectory: String = NSHomeDirectory(),
+    environmentPath: String? = ProcessInfo.processInfo.environment["PATH"],
+    applicationDirectories: [String]? = nil,
+    systemBinaryPaths: [String]? = nil,
+    fileManager: FileManager = .default
+) -> String? {
+    var candidates: [String] = []
+
+    if let environmentPath {
+        candidates += environmentPath
+            .split(separator: ":")
+            .map { "\($0)/codex" }
+    }
+
+    candidates += systemBinaryPaths ?? [
+        "/opt/homebrew/bin/codex",
+        "/usr/local/bin/codex",
+        "/opt/local/bin/codex",
+        "\(homeDirectory)/.codex/bin/codex",
+        "\(homeDirectory)/.local/bin/codex",
+        "\(homeDirectory)/.npm-global/bin/codex",
+        "\(homeDirectory)/.volta/bin/codex",
+        "\(homeDirectory)/.bun/bin/codex",
+        "\(homeDirectory)/.asdf/shims/codex",
+        "\(homeDirectory)/.nodenv/shims/codex",
+        "\(homeDirectory)/Library/pnpm/codex"
+    ]
+
+    let appDirectories = applicationDirectories ?? [
+        "/Applications",
+        "\(homeDirectory)/Applications"
+    ]
+    for directory in appDirectories {
+        candidates += [
+            "\(directory)/ChatGPT.app/Contents/Resources/codex",
+            "\(directory)/Codex.app/Contents/Resources/codex"
+        ]
+    }
+
+    let versionedInstallRoots: [(root: String, suffix: String)] = [
+        ("\(homeDirectory)/.nvm/versions/node", "bin/codex"),
+        ("\(homeDirectory)/.local/share/fnm/node-versions", "installation/bin/codex"),
+        ("\(homeDirectory)/Library/Application Support/fnm/node-versions", "installation/bin/codex"),
+        ("\(homeDirectory)/.local/share/mise/installs/node", "bin/codex"),
+        ("\(homeDirectory)/.asdf/installs/nodejs", "bin/codex"),
+        ("\(homeDirectory)/.nodenv/versions", "bin/codex")
+    ]
+    for installRoot in versionedInstallRoots {
+        guard let versions = try? fileManager.contentsOfDirectory(atPath: installRoot.root) else { continue }
+        candidates += versions.sorted(by: >).map {
+            "\(installRoot.root)/\($0)/\(installRoot.suffix)"
+        }
+    }
+
+    let editorExtensionRoots = [
+        "\(homeDirectory)/.vscode/extensions",
+        "\(homeDirectory)/.vscode-insiders/extensions",
+        "\(homeDirectory)/.cursor/extensions",
+        "\(homeDirectory)/.windsurf/extensions"
+    ]
+    for extensionsRoot in editorExtensionRoots {
+        guard let extensions = try? fileManager.contentsOfDirectory(atPath: extensionsRoot) else { continue }
+        for extensionName in extensions.filter({ $0.hasPrefix("openai.chatgpt-") }).sorted(by: >) {
+            candidates += [
+                "\(extensionsRoot)/\(extensionName)/bin/macos-aarch64/codex",
+                "\(extensionsRoot)/\(extensionName)/bin/macos-x86_64/codex"
+            ]
+        }
+    }
+
+    var checked = Set<String>()
+    return candidates.first { path in
+        checked.insert(path).inserted && fileManager.fileExists(atPath: path)
+    }
+}
+
 struct RateLimitWindow {
     let usedPercent: Int          // 0-100, percentage already used
     let windowDurationMins: Int   // e.g. 300 for 5h, 10080 for 7d
@@ -135,6 +217,7 @@ class UsageTracker: ObservableObject {
     )
 
     @Published var showSettings = false
+    @Published private(set) var appServerError: AppServerError?
 
     private var process: Process?
     private var stdinPipe: Pipe?
@@ -164,41 +247,20 @@ class UsageTracker: ObservableObject {
     // MARK: - App Server Management
 
     private func findCodexBinary() -> String? {
-        let candidates = [
-            "/opt/homebrew/bin/codex",
-            "/usr/local/bin/codex",
-            "\(NSHomeDirectory())/.codex/bin/codex"
-        ]
-        for path in candidates {
-            // Use fileExists instead of isExecutableFile because codex is a symlink
-            // pointing to a Node.js script with a shebang
-            if FileManager.default.fileExists(atPath: path) {
-                print("[CodexLimitMeter] Found codex at: \(path)")
-                return path
-            }
-        }
-        // Try which
-        let task = Process()
-        task.executableURL = URL(fileURLWithPath: "/usr/bin/which")
-        task.arguments = ["codex"]
-        let pipe = Pipe()
-        task.standardOutput = pipe
-        try? task.run()
-        task.waitUntilExit()
-        let data = pipe.fileHandleForReading.readDataToEndOfFile()
-        let path = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines)
-        if let p = path, !p.isEmpty, FileManager.default.fileExists(atPath: p) {
-            print("[CodexLimitMeter] Found codex via which: \(p)")
-            return p
+        if let path = locateCodexBinary() {
+            print("[CodexLimitMeter] Found codex at: \(path)")
+            return path
         }
         print("[CodexLimitMeter] Could not find codex binary")
         return nil
     }
 
     private func startAppServer() {
+        appServerError = nil
         guard let codexPath = findCodexBinary() else {
             print("[CodexLimitMeter] codex binary not found")
             DispatchQueue.main.async {
+                self.appServerError = .codexNotFound
                 self.usage = UsageData(
                     primary: nil, secondary: nil,
                     planType: nil, hasCredits: false, creditBalance: nil,
@@ -215,12 +277,9 @@ class UsageTracker: ObservableObject {
         // Set PATH so that codex's shebang (#!/usr/bin/env node) can find node
         var env = ProcessInfo.processInfo.environment
         let path = env["PATH"] ?? "/usr/bin:/bin:/usr/sbin:/sbin"
-        if !path.contains("/opt/homebrew/bin") {
-            env["PATH"] = "/opt/homebrew/bin:\(path)"
-        }
-        if !path.contains("/usr/local/bin") {
-            env["PATH"] = "/usr/local/bin:\(env["PATH"]!)"
-        }
+        let codexDirectory = URL(fileURLWithPath: codexPath).deletingLastPathComponent().path
+        env["PATH"] = [codexDirectory, "/opt/homebrew/bin", "/usr/local/bin", path]
+            .joined(separator: ":")
         proc.environment = env
 
         let stdin = Pipe()
@@ -228,6 +287,19 @@ class UsageTracker: ObservableObject {
         proc.standardInput = stdin
         proc.standardOutput = stdout
         proc.standardError = Pipe() // Suppress stderr
+        proc.terminationHandler = { [weak self, weak proc] _ in
+            guard let self, let proc, self.process === proc else { return }
+            DispatchQueue.main.async {
+                self.process = nil
+                self.isInitialized = false
+                self.appServerError = .launchFailed
+                self.usage = UsageData(
+                    primary: nil, secondary: nil,
+                    planType: nil, hasCredits: false, creditBalance: nil,
+                    lastUpdated: Date(), dataSource: .error
+                )
+            }
+        }
 
         stdout.fileHandleForReading.readabilityHandler = { [weak self] handle in
             let data = handle.availableData
@@ -253,6 +325,12 @@ class UsageTracker: ObservableObject {
             }
         } catch {
             print("[CodexLimitMeter] Failed to start app-server: \(error)")
+            appServerError = .launchFailed
+            usage = UsageData(
+                primary: nil, secondary: nil,
+                planType: nil, hasCredits: false, creditBalance: nil,
+                lastUpdated: Date(), dataSource: .error
+            )
         }
     }
 
@@ -360,7 +438,7 @@ class UsageTracker: ObservableObject {
             "clientInfo": [
                 "name": "codex_limit_meter",
                 "title": "Codex Limit Meter",
-                "version": "1.0.0"
+                "version": "1.1.1"
             ]
         ]) { [weak self] response in
             if response["result"] != nil {
@@ -462,13 +540,28 @@ class UsageTracker: ObservableObject {
 
     func refresh() {
         guard isInitialized else {
-            // Try to initialize again
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
-                self?.refresh()
+            if process == nil {
+                usage = UsageData(
+                    primary: nil, secondary: nil,
+                    planType: nil, hasCredits: false, creditBalance: nil,
+                    lastUpdated: Date(), dataSource: .loading
+                )
+                startAppServer()
             }
             return
         }
         fetchRateLimits()
+    }
+
+    func appServerErrorText(language: AppLanguage) -> String {
+        switch appServerError {
+        case .codexNotFound:
+            return language == .chinese ? "未找到 Codex · 点击重试" : "Codex not found · Click to retry"
+        case .launchFailed:
+            return language == .chinese ? "Codex 启动失败 · 点击重试" : "Codex failed to start · Click to retry"
+        case nil:
+            return language == .chinese ? "更新失败 · 点击重试" : "Update failed · Click to retry"
+        }
     }
 
     func openConfigFolder() {

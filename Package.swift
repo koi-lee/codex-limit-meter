@@ -16,5 +16,9 @@ let package = Package(
                 .process("appIcon2.png"),
             ]
         ),
+        .testTarget(
+            name: "CodexLimitMeterTests",
+            dependencies: ["CodexLimitMeter"]
+        ),
     ]
 )

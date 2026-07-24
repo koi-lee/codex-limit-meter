@@ -2,6 +2,11 @@ import Cocoa
 import SwiftUI
 import Combine
 
+func isRunningFromMountedDiskImage(bundlePath: String = Bundle.main.bundlePath) -> Bool {
+    let path = URL(fileURLWithPath: bundlePath).standardizedFileURL.path
+    return path == "/Volumes" || path.hasPrefix("/Volumes/")
+}
+
 @main
 struct CodexLimitMeterApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
@@ -24,6 +29,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Show in Dock and menu bar (regular app)
         NSApp.setActivationPolicy(.regular)
+
+        if isRunningFromMountedDiskImage() {
+            showInstallRequiredAlert()
+            NSApp.terminate(nil)
+            return
+        }
         
         // Set custom dock icon from Resources
         if let iconPath = findResource("AppIcon", ext: "png"),
@@ -72,6 +83,23 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
         // Setup menu bar icon
         setupStatusItem()
+    }
+
+    private func showInstallRequiredAlert() {
+        let isChinese = tracker.language == .chinese
+        let alert = NSAlert()
+        alert.alertStyle = .informational
+        alert.messageText = isChinese ? "请先安装到应用程序文件夹" : "Install the app before opening it"
+        alert.informativeText = isChinese
+            ? "请将 CodexLimitMeter 拖到“应用程序”，推出 Codex Limit Meter 磁盘，然后从“应用程序”打开。"
+            : "Drag CodexLimitMeter to Applications, eject the Codex Limit Meter disk, then open the app from Applications."
+        alert.addButton(withTitle: isChinese ? "打开应用程序文件夹" : "Open Applications")
+        alert.addButton(withTitle: isChinese ? "退出" : "Quit")
+
+        NSApp.activate(ignoringOtherApps: true)
+        if alert.runModal() == .alertFirstButtonReturn {
+            NSWorkspace.shared.open(URL(fileURLWithPath: "/Applications", isDirectory: true))
+        }
     }
     
     func applicationWillTerminate(_ notification: Notification) {

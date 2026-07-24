@@ -153,7 +153,7 @@ struct ContentView: View {
             let prefix = tracker.language == .chinese ? "手动配置" : "Manual config"
             return "\(prefix) · \(timeString(from: tracker.usage.lastUpdated))"
         case .error:
-            return tracker.language == .chinese ? "更新失败 · 点击重试" : "Update failed · Click to retry"
+            return tracker.appServerErrorText(language: tracker.language)
         }
     }
 
