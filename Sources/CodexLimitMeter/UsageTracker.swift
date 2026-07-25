@@ -197,6 +197,25 @@ struct UsageData {
     }
 }
 
+func appServerNeedsRestart(
+    dataSource: UsageData.DataSource,
+    lastUpdated: Date,
+    serverStartedAt: Date?,
+    now: Date = Date(),
+    staleAfter: TimeInterval = 120,
+    startupTimeout: TimeInterval = 15
+) -> Bool {
+    switch dataSource {
+    case .appServer:
+        return now.timeIntervalSince(lastUpdated) > staleAfter
+    case .loading:
+        guard let serverStartedAt else { return false }
+        return now.timeIntervalSince(serverStartedAt) > startupTimeout
+    case .config, .error:
+        return false
+    }
+}
+
 // MARK: - UsageTracker
 
 class UsageTracker: ObservableObject {
@@ -229,6 +248,7 @@ class UsageTracker: ObservableObject {
     private var refreshTimer: Timer?
     private var isInitialized = false
     private var latestRateLimits: [String: Any] = [:]
+    private var appServerStartedAt: Date?
 
     init() {
         let savedLanguage = UserDefaults.standard.string(forKey: "appLanguage")
@@ -313,6 +333,7 @@ class UsageTracker: ObservableObject {
             self.process = proc
             self.stdinPipe = stdin
             self.stdoutPipe = stdout
+            self.appServerStartedAt = Date()
             print("[CodexLimitMeter] app-server started (PID: \(proc.processIdentifier))")
 
             // Send initialize
@@ -337,8 +358,31 @@ class UsageTracker: ObservableObject {
     private func stopAppServer() {
         refreshTimer?.invalidate()
         stdoutPipe?.fileHandleForReading.readabilityHandler = nil
-        process?.terminate()
+        let runningProcess = process
         process = nil
+        stdinPipe = nil
+        stdoutPipe = nil
+        appServerStartedAt = nil
+        isInitialized = false
+        latestRateLimits = [:]
+        responseBuffer = ""
+
+        lock.lock()
+        pendingResponses.removeAll()
+        lock.unlock()
+
+        runningProcess?.terminate()
+    }
+
+    private func restartAppServer() {
+        print("[CodexLimitMeter] app-server response timed out; restarting")
+        stopAppServer()
+        usage = UsageData(
+            primary: nil, secondary: nil,
+            planType: nil, hasCredits: false, creditBalance: nil,
+            lastUpdated: Date(), dataSource: .loading
+        )
+        startAppServer()
     }
 
     // MARK: - JSON-RPC Communication
@@ -438,7 +482,7 @@ class UsageTracker: ObservableObject {
             "clientInfo": [
                 "name": "codex_limit_meter",
                 "title": "Codex Limit Meter",
-                "version": "1.1.1"
+                "version": "1.1.2"
             ]
         ]) { [weak self] response in
             if response["result"] != nil {
@@ -539,6 +583,16 @@ class UsageTracker: ObservableObject {
     }
 
     func refresh() {
+        if process != nil,
+           appServerNeedsRestart(
+               dataSource: usage.dataSource,
+               lastUpdated: usage.lastUpdated,
+               serverStartedAt: appServerStartedAt
+           ) {
+            restartAppServer()
+            return
+        }
+
         guard isInitialized else {
             if process == nil {
                 usage = UsageData(
