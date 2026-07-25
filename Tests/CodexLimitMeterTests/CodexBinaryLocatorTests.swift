@@ -62,6 +62,48 @@ import Testing
     )
 }
 
+@Test func restartsAppServerWhenUsageDataIsStale() {
+    let now = Date(timeIntervalSince1970: 1_000)
+
+    #expect(
+        appServerNeedsRestart(
+            dataSource: .appServer,
+            lastUpdated: now.addingTimeInterval(-121),
+            serverStartedAt: now.addingTimeInterval(-300),
+            now: now
+        )
+    )
+    #expect(
+        !appServerNeedsRestart(
+            dataSource: .appServer,
+            lastUpdated: now.addingTimeInterval(-119),
+            serverStartedAt: now.addingTimeInterval(-300),
+            now: now
+        )
+    )
+}
+
+@Test func restartsAppServerWhenInitialConnectionTimesOut() {
+    let now = Date(timeIntervalSince1970: 1_000)
+
+    #expect(
+        appServerNeedsRestart(
+            dataSource: .loading,
+            lastUpdated: now,
+            serverStartedAt: now.addingTimeInterval(-16),
+            now: now
+        )
+    )
+    #expect(
+        !appServerNeedsRestart(
+            dataSource: .loading,
+            lastUpdated: now,
+            serverStartedAt: now.addingTimeInterval(-14),
+            now: now
+        )
+    )
+}
+
 private func makeTemporaryHome() throws -> URL {
     let url = FileManager.default.temporaryDirectory
         .appendingPathComponent(UUID().uuidString, isDirectory: true)
