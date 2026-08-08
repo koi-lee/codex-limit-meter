@@ -17,6 +17,16 @@ if [ "$1" == "--dmg" ]; then
     BUILD_DMG=true
 fi
 
+# For GitHub distribution, use a Developer ID Application certificate when
+# available. Keep ad-hoc signing as a local fallback so development builds
+# remain possible before the certificate is installed.
+SIGNING_IDENTITY="${CODE_SIGN_IDENTITY:-}"
+if [ -z "$SIGNING_IDENTITY" ]; then
+    SIGNING_IDENTITY=$(security find-identity -v -p codesigning 2>/dev/null \
+        | sed -n 's/.*"\(Developer ID Application:.*\)"/\1/p' \
+        | head -n 1 || true)
+fi
+
 # Compile (output to temp name, will move into .app)
 TMP_BINARY="$BUILD_DIR/${APP_NAME}_tmp"
 swiftc -parse-as-library -framework Cocoa -framework SwiftUI \
@@ -73,9 +83,9 @@ cat > "$BUILD_DIR/$APP_NAME.app/Contents/Info.plist" << 'PLIST'
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.1.2</string>
+    <string>1.1.3</string>
     <key>CFBundleVersion</key>
-    <string>4</string>
+    <string>5</string>
     <key>LSMinimumSystemVersion</key>
     <string>13.0</string>
     <key>LSMultipleInstancesProhibited</key>
@@ -92,8 +102,16 @@ PLIST
 # This prevents quarantine and provenance URLs from leaking into release builds.
 xattr -cr "$BUILD_DIR/$APP_NAME.app"
 
-# Sign ad-hoc
-codesign --force --deep --sign - "$BUILD_DIR/$APP_NAME.app" 2>/dev/null || true
+# Sign for distribution when Developer ID is installed; otherwise use ad-hoc
+# signing for local builds. Hardened Runtime is required for notarization.
+if [ -n "$SIGNING_IDENTITY" ]; then
+    codesign --force --deep --options runtime --timestamp \
+        --sign "$SIGNING_IDENTITY" "$BUILD_DIR/$APP_NAME.app"
+    echo "✅ Signed with: $SIGNING_IDENTITY"
+else
+    codesign --force --deep --sign - "$BUILD_DIR/$APP_NAME.app"
+    echo "⚠️ No Developer ID Application certificate found; using ad-hoc signing"
+fi
 
 echo "✅ Build complete: $BUILD_DIR/$APP_NAME.app"
 echo ""

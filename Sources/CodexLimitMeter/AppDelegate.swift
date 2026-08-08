@@ -62,6 +62,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         hostingView.layer?.masksToBounds = true
         
         window.contentView = hostingView
+        centerWindow()
         window.makeKeyAndOrderFront(nil)
 
         usageCancellable = tracker.$usage
@@ -69,9 +70,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             .sink { [weak self] usage in
                 self?.resizeWindow(for: usage)
             }
-        
-        // Restore saved position
-        restoreWindowPosition()
         
         // Initial refresh
         tracker.refresh()
@@ -104,24 +102,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     func applicationWillTerminate(_ notification: Notification) {
         timer?.invalidate()
-        saveWindowPosition()
     }
-    
-    private func restoreWindowPosition() {
-        let defaults = UserDefaults.standard
-        if let x = defaults.object(forKey: "windowX") as? CGFloat,
-           let y = defaults.object(forKey: "windowY") as? CGFloat {
-            var frame = window.frame
-            frame.origin.x = x
-            frame.origin.y = y
-            window.setFrame(frame, display: true)
-        }
-    }
-    
-    private func saveWindowPosition() {
-        let defaults = UserDefaults.standard
-        defaults.set(window.frame.origin.x, forKey: "windowX")
-        defaults.set(window.frame.origin.y, forKey: "windowY")
+
+    private func centerWindow() {
+        window.center()
     }
 
     private func resizeWindow(for usage: UsageData) {
@@ -135,6 +119,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         frame.size.height = targetHeight
         frame.origin.y = topEdge - targetHeight
         window.setFrame(frame, display: true, animate: true)
+        centerWindow()
     }
     
     /// 查找资源文件路径，兼容两种运行模式：

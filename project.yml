@@ -1,0 +1,44 @@
+name: CodexLimitMeter
+options:
+  bundleIdPrefix: com.codex
+  deploymentTarget:
+    macOS: "13.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    DEVELOPMENT_TEAM: 4BHPD976HX
+    CODE_SIGN_STYLE: Automatic
+targets:
+  CodexLimitMeter:
+    type: application
+    platform: macOS
+    sources:
+      - path: Sources/CodexLimitMeter
+        excludes:
+          - "*.png"
+    resources:
+      - path: Sources/CodexLimitMeter/AppIcon.png
+      - path: Sources/CodexLimitMeter/appIcon2.png
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.codex.limit-meter
+        PRODUCT_NAME: CodexLimitMeter
+        INFOPLIST_FILE: AppStore/Info.plist
+        CODE_SIGN_ENTITLEMENTS: AppStore/CodexLimitMeter.entitlements
+        CODE_SIGN_IDENTITY: "Apple Distribution"
+        MACOSX_DEPLOYMENT_TARGET: "13.0"
+        GENERATE_INFOPLIST_FILE: NO
+    entitlements:
+      path: AppStore/CodexLimitMeter.entitlements
+  CodexLimitMeterTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: Tests/CodexLimitMeterTests
+    dependencies:
+      - target: CodexLimitMeter
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.codex.limit-meter.tests
+        CODE_SIGN_IDENTITY: "Apple Development"

@@ -482,7 +482,7 @@ class UsageTracker: ObservableObject {
             "clientInfo": [
                 "name": "codex_limit_meter",
                 "title": "Codex Limit Meter",
-                "version": "1.1.2"
+                "version": "1.1.3"
             ]
         ]) { [weak self] response in
             if response["result"] != nil {

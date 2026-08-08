@@ -20,6 +20,8 @@
 - 已安装 Codex CLI 并完成登录（`codex` 命令可用）
 - Codex 使用 ChatGPT 账号登录（非 API Key 登录）
 
+> 本项目通过 GitHub 发布 DMG，不上架 Mac App Store。正式免拦截分发需要 Developer ID Application 签名并完成 Apple notarization；本机未安装该证书时，`build.sh` 会自动使用 ad-hoc 签名，仅适合本地测试。
+
 ## 下载使用
 
 ### 方式一：下载 DMG 安装（推荐）
