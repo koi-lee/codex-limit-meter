@@ -8,6 +8,8 @@ Codex Limit Meter reads official quota data from the local Codex App Server and 
 
 The app identifies short-term and weekly limits by their actual window duration instead of relying on their field order. If Codex temporarily removes a limit, that row is hidden automatically. When the limit returns, the row appears again without requiring an app update or configuration change.
 
+There is also a separate [Codex Meter page for public reset updates](https://www.starshoreai.com/codex-meter/?utm_source=github&utm_medium=readme&utm_campaign=traffic_growth_202609), with announcements, completion updates, and source posts. This page is not part of this repository's DMG. Updates are third-party transcriptions and may be delayed or incomplete.
+
 ![Codex Limit Meter](docs/screenshot.png)
 
 Weekly limit only:

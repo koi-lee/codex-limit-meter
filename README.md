@@ -8,6 +8,8 @@
 
 一个常驻 Mac 桌面的悬浮窗，自动获取 Codex 官方配额数据，支持拖拽、颜色预警、套餐显示。应用会按照服务端实际返回的窗口时长识别短期和周额度；如果官方临时取消某个额度窗口，对应额度行会自动隐藏，不会把周额度误显示为“168 小时额度”。
 
+另有独立的 [Codex Meter 公开重置消息网页](https://www.starshoreai.com/codex-meter/?utm_source=github&utm_medium=readme&utm_campaign=traffic_growth_202609)，可查看公开预告、完成消息和原帖依据。网页不是本仓库 DMG 内的功能；消息为第三方转录，可能延迟或遗漏。
+
 ![Codex Limit Meter 悬浮窗截图](docs/screenshot.png)
 
 仅展示周额度时：
