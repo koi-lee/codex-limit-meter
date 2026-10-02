@@ -1,0 +1,10 @@
+# Exact historical false positives: UserDefaults key pet.bubblePending.v1, not a credential.
+5c08f39f4337f0b45701c3fb9aff292d439bda02:Sources/CodexMeter/PetWindowController.swift:generic-api-key:357
+5c08f39f4337f0b45701c3fb9aff292d439bda02:Sources/CodexMeter/PetWindowController.swift:generic-api-key:360
+5c08f39f4337f0b45701c3fb9aff292d439bda02:Sources/CodexMeter/PetWindowController.swift:generic-api-key:364
+5c08f39f4337f0b45701c3fb9aff292d439bda02:Sources/CodexMeter/PetWindowController.swift:generic-api-key:366
+5c08f39f4337f0b45701c3fb9aff292d439bda02:Sources/CodexMeter/PetWindowController.swift:generic-api-key:373
+5c08f39f4337f0b45701c3fb9aff292d439bda02:Sources/CodexMeter/PetWindowController.swift:generic-api-key:378
+5c08f39f4337f0b45701c3fb9aff292d439bda02:Sources/CodexMeter/PetWindowController.swift:generic-api-key:434
+5c08f39f4337f0b45701c3fb9aff292d439bda02:Sources/CodexMeter/PetWindowController.swift:generic-api-key:440
+5c08f39f4337f0b45701c3fb9aff292d439bda02:Sources/CodexMeter/PetWindowController.swift:generic-api-key:463

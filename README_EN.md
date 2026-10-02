@@ -1,122 +1,29 @@
-# Codex Limit Meter
+# Codex Meter
 
-[中文](README.md) | [English](README_EN.md)
+A macOS desktop companion and menu bar app for Codex usage and public reset announcements.
 
-> A floating macOS widget that monitors the Codex rate-limit windows currently available to your account.
+[中文](README.md) · [Quota Orbit](https://www.starshoreai.com/quota-orbit/)
 
-Codex Limit Meter reads official quota data from the local Codex App Server and displays it in a compact desktop window. It supports dragging, color warnings, plan labels, and Chinese/English switching.
+## Source release
 
-The app identifies short-term and weekly limits by their actual window duration instead of relying on their field order. If Codex temporarily removes a limit, that row is hidden automatically. When the limit returns, the row appears again without requiring an app update or configuration change.
+This repository contains the macOS client, tests and bundled character resources under AGPL-3.0. The website, server, browser extension and developer credentials are excluded. Legacy v1.1.3 and earlier tags retain their MIT license and are no longer maintained.
 
-There is also a separate [Codex Meter page for public reset updates](https://www.starshoreai.com/codex-meter/?utm_source=github&utm_medium=readme&utm_campaign=traffic_growth_202609), with announcements, completion updates, and source posts. This page is not part of this repository's DMG. Updates are third-party transcriptions and may be delayed or incomplete.
+This release includes source only, with no notarized installer or claim of App Store availability.
 
-![Codex Limit Meter](docs/screenshot.png)
+## Build locally
 
-Weekly limit only:
+Requires macOS 13+, Swift 5.9+ and Xcode Command Line Tools. Validated on Apple Silicon; Intel has not been tested on hardware.
 
-![Codex Limit Meter showing only the weekly limit](docs/screenshot-weekly-only.png)
-
-## Requirements
-
-- macOS 13.0 or later
-- Codex CLI installed and available through the `codex` command
-- Signed in to Codex with a ChatGPT account rather than API-key-only authentication
-
-## Installation
-
-### Option 1: Install from DMG
-
-1. Download `CodexLimitMeter.dmg` from [Releases](../../releases).
-2. Open the DMG and drag `CodexLimitMeter` into the Applications folder.
-3. When copying finishes, eject `Codex Limit Meter` from the Finder sidebar. If more than one disk is listed, eject each one.
-4. Open Finder → Applications and launch `CodexLimitMeter.app`. Do not run the copy inside the DMG.
-5. If macOS blocks the app because the developer cannot be verified, choose one of these options:
-
-   ```bash
-   xattr -dr com.apple.quarantine "/Applications/CodexLimitMeter.app"
-   ```
-
-   Or open **System Settings → Privacy & Security** and select **Open Anyway**.
-
-Only remove the quarantine attribute when you downloaded the app from a source you trust.
-
-### Option 2: Build from source
-
-```bash
-git clone https://github.com/koi-lee/codex-limit-meter.git
-cd codex-limit-meter
-chmod +x build.sh
-./build.sh
-open dist/CodexLimitMeter.app
+```sh
+swift test --disable-sandbox
+./build-local.sh
+open "dist/Codex Meter Open Source.app"
 ```
 
-To create a distributable DMG:
+The script creates an ad-hoc signed app with a separate bundle identifier and never installs over your existing app. Use a fresh `CODEX_BUILD_DIR` when rebuilding. Install and sign in to the Codex CLI yourself; the App Store CLI helper is not bundled. Notifications are opt-in.
 
-```bash
-./build.sh --dmg
-```
+Credentials and personal usage stay on your Mac. Public reset messages are announcements or third-party transcripts, not confirmation that every account received a reset. Network access and the upstream Codex response determine availability.
 
-## Usage
+## License
 
-After launch:
-
-1. The app appears in the Dock and menu bar.
-2. A floating quota window appears on the desktop and can be dragged anywhere.
-3. The app connects to the Codex App Server and loads quota data within a few seconds.
-4. `Synced` at the bottom indicates that live data was received successfully.
-
-| Action | Description |
-|---|---|
-| Drag the window | Drag the dark background to move the widget |
-| Refresh button | Refresh quota data immediately |
-| Menu bar icon | Show the window, refresh data, control desktop visibility, change language, or quit |
-| Language | Menu bar icon → Switch to English / Switch to 中文 |
-| Desktop visibility | Menu bar icon → toggle **Show on All Desktops**; enabled by default and remembered after restart |
-| `⌘Q` | Quit the app |
-
-Progress colors are based on the remaining quota: green above 40%, orange from 20% to 40%, and red below 20%.
-
-## How it works
-
-Codex Limit Meter starts the local `codex app-server` process and communicates with it over JSON-RPC:
-
-- `account/rateLimits/read` loads the current quota snapshot.
-- `account/rateLimits/updated` receives live, partial updates.
-- Partial updates are merged into the latest complete snapshot.
-- Windows are classified using `windowDurationMins`, so a weekly-only response is never displayed as a 168-hour short-term limit.
-
-The App Server process is terminated automatically when Codex Limit Meter exits.
-
-## FAQ
-
-### Why is the five-hour limit missing?
-
-Codex did not return a five-hour quota window for the current account. For example, OpenAI may temporarily remove that restriction for some plans. The app only displays limits that currently exist. If the five-hour window returns, its row appears automatically.
-
-### Why does the widget say “Update failed”?
-
-Check that:
-
-1. The `codex` command is available.
-2. Codex is signed in.
-3. You are using ChatGPT-managed authentication rather than API-key-only authentication.
-
-### Why does macOS say the developer cannot be verified?
-
-Current releases use ad-hoc signing and are not distributed through the Mac App Store. Install the app only from a source you trust, then use the quarantine command or **Open Anyway** procedure described above.
-
-### Why are multiple “Codex Limit Meter” disks listed in Finder?
-
-Each opened DMG mounts a read-only installation disk. Opening additional copies before ejecting earlier ones creates multiple entries. Eject every `Codex Limit Meter` disk from the Finder sidebar after installation, then launch the app from Applications.
-
-### Can I move the widget to an external display or another app's full-screen Space?
-
-Yes. The floating window can move across displays and appear alongside other apps in full-screen Spaces and Stage Manager groups.
-
-### How can I keep the widget on only one macOS desktop?
-
-Open the menu bar menu and turn off **Show on All Desktops**. Turn it on again to make the widget visible across every desktop. The app remembers this choice after restart.
-
-## Development
-
-See [DEVELOPMENT.md](DEVELOPMENT.md) for implementation details and contribution guidance.
+Current client project code uses GNU AGPL v3.0; see LICENSE. Earlier MIT grants remain valid; see LICENSE-MIT-legacy. Third-party notices remain applicable. This is an independent project, not an official OpenAI product.

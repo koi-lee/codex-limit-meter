@@ -1,15 +1,6 @@
-# Build output
-dist/
-
-# SPM build cache
 .build/
-.swiftpm/
-
-# Xcode
-xcuserdata/
-DerivedData/
-*.xcodeproj
-*.xcworkspace
-
-# macOS
+dist/
 .DS_Store
+.env
+*.p12
+*.mobileprovision
