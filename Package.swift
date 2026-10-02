@@ -2,23 +2,26 @@
 import PackageDescription
 
 let package = Package(
-    name: "CodexLimitMeter",
+    name: "CodexMeter",
     platforms: [.macOS(.v13)],
     products: [
-        .executable(name: "CodexLimitMeter", targets: ["CodexLimitMeter"]),
+        .executable(name: "CodexMeter", targets: ["CodexMeter"]),
     ],
     targets: [
         .executableTarget(
-            name: "CodexLimitMeter",
+            name: "CodexMeter",
             dependencies: [],
             resources: [
                 .process("AppIcon.png"),
+                .process("BrandIcon.png"),
+                .process("PetAppIcon.png"),
                 .process("appIcon2.png"),
+                .copy("Pet"),
             ]
         ),
         .testTarget(
-            name: "CodexLimitMeterTests",
-            dependencies: ["CodexLimitMeter"]
+            name: "CodexMeterTests",
+            dependencies: ["CodexMeter"]
         ),
     ]
 )

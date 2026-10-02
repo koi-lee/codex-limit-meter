@@ -1,0 +1,11 @@
+name: macOS client
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  client:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - run: swift test --disable-sandbox
+      - run: ./build-local.sh

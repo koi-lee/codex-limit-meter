@@ -1,126 +1,39 @@
-# Codex Limit Meter
+# Codex Meter
 
-[中文](README.md) | [English](README_EN.md)
+macOS 桌宠与菜单栏工具：查看 Codex 个人额度，关注公开重置消息。
 
-> Mac 桌面 Codex 额度悬浮窗 — 实时监控当前账号可用的额度窗口
->
-> A macOS desktop widget for monitoring the Codex rate-limit windows currently available to your account.
+[English](README_EN.md) · [额度星盘网站](https://www.starshoreai.com/quota-orbit/)
 
-一个常驻 Mac 桌面的悬浮窗，自动获取 Codex 官方配额数据，支持拖拽、颜色预警、套餐显示。应用会按照服务端实际返回的窗口时长识别短期和周额度；如果官方临时取消某个额度窗口，对应额度行会自动隐藏，不会把周额度误显示为“168 小时额度”。
+## 当前发布范围
 
-另有独立的 [Codex Meter 公开重置消息网页](https://www.starshoreai.com/codex-meter/?utm_source=github&utm_medium=readme&utm_campaign=traffic_growth_202609)，可查看公开预告、完成消息和原帖依据。网页不是本仓库 DMG 内的功能；消息为第三方转录，可能延迟或遗漏。
+这是新版客户端的 **AGPL-3.0 源码发布**，包含 Swift 源码、测试和本地桌宠资源。网站、服务器、浏览器扩展、开发者配置和凭据不在此仓库中。旧 Codex Limit Meter v1.1.3 及更早标签保留原 MIT 许可，已停止维护，界面与新版不同。
 
-![Codex Limit Meter 悬浮窗截图](docs/screenshot.png)
+本次未发布已签名或公证的安装包，也不代表 Mac App Store 已上架。
 
-仅展示周额度时：
+## 本地构建
 
-![Codex Limit Meter 仅展示周额度](docs/screenshot-weekly-only.png)
+需要 macOS 13+、Xcode Command Line Tools 和 Swift 5.9 或更高版本。此次在 Apple Silicon Mac 验证；Intel 尚未实机验证。
 
-## 系统要求
-
-- macOS 13.0+（Ventura 及以上）
-- 已安装 Codex CLI 并完成登录（`codex` 命令可用）
-- Codex 使用 ChatGPT 账号登录（非 API Key 登录）
-
-> 本项目通过 GitHub 发布 DMG，不上架 Mac App Store。正式免拦截分发需要 Developer ID Application 签名并完成 Apple notarization；本机未安装该证书时，`build.sh` 会自动使用 ad-hoc 签名，仅适合本地测试。
-
-## 下载使用
-
-### 方式一：下载 DMG 安装（推荐）
-
-1. 前往 [Releases](../../releases) 下载最新的 `CodexLimitMeter.dmg`
-2. 请将 `CodexLimitMeter` 图标拖到左侧 `Applications` 文件夹：
-
-   ![将 CodexLimitMeter 拖到 Applications 安装](docs/dmg-drag-to-applications.png)
-
-3. 复制完成后，在 Finder 左侧点击 `Codex Limit Meter` 旁的推出按钮。若左侧已有多个同名磁盘，请逐个推出
-4. 打开 Finder 的「应用程序」文件夹，双击已安装的 `CodexLimitMeter.app`。不要直接运行 DMG 里的 App
-5. 首次打开如出现下图的 Gatekeeper 拦截，点击「完成」，**不要点击「移到废纸篓」**：
-
-   ![macOS Gatekeeper 无法验证开发者提示](docs/gatekeeper-warning.png)
-
-6. 二选一解除拦截：
-   - **终端命令**（推荐）：在终端执行：
-
-     ```bash
-     xattr -dr com.apple.quarantine "/Applications/CodexLimitMeter.app"
-     ```
-
-     如提示 `No such file`，说明第 2 步没有完成，请先将 App 拖到 Applications，不要对 DMG 里的 App 执行命令。
-   - **系统设置**：前往 **系统设置 → 隐私与安全性** → 点击「仍要打开」
-
-7. 命令执行完毕后，回到 Finder 的「应用程序」文件夹，再次双击 `CodexLimitMeter.app` 即可。**不需要重新安装或重新下载。**
-
-### 方式二：从源码编译
-
-```bash
-git clone https://github.com/koi-lee/codex-limit-meter.git
-cd codex-limit-meter
-chmod +x build.sh
-./build.sh          # 编译，产物在 dist/
-open dist/CodexLimitMeter.app
+```sh
+swift test --disable-sandbox
+./build-local.sh
+open "dist/Codex Meter Open Source.app"
 ```
 
-如需打包 DMG 分发给他人：
+构建脚本创建独立 Bundle ID 的本地 App，使用 ad-hoc 签名，不需要开发者证书。它不会安装或覆盖已有 App；重复构建请使用新的 `CODEX_BUILD_DIR`。公开源码版通过本机 Codex CLI 读取额度，需要自行安装并登录 Codex；不包含商店版捆绑的 CLI helper。首次打开按使用指南操作；通知由用户主动开启。
 
-```bash
-./build.sh --dmg    # 生成 dist/CodexLimitMeter.dmg
-```
+## 能做什么
 
-## 使用方式
+- 桌宠与菜单栏展示额度、重置时间和本机额度变化。
+- 星盘中查看额度与公开消息，可切换角色及演示数据。
+- App 运行并联网时检查公开消息；消息来自公开源或第三方转录，需核对原帖，不能代表每个账号已到账。
 
-应用启动后：
+账号凭据与使用数据留在本机；不上传至此仓库。额度可用性取决于 Codex 实际返回内容。无数据、失败或过期时不应视为重置完成。
 
-1. Dock 和菜单栏出现应用图标
-2. 深色圆角悬浮窗出现在桌面，可拖拽到任意位置
-3. 启动后 2-3 秒内自动连接 Codex App Server 并获取数据
-4. 底部显示 **已同步** 表示连接成功
+## 许可
 
-| 操作 | 说明 |
-|------|------|
-| 拖拽窗口 | 点击深色背景区域拖拽到任意位置 |
-| 刷新按钮 | 右上角 ↻ 立即刷新 |
-| 菜单栏图标 | 显示窗口 / 刷新 / 在所有桌面显示 / 语言切换 / 退出 |
-| 语言切换 | 菜单栏图标 → 切换到 English / Switch to 中文 |
-| 桌面显示范围 | 菜单栏图标 → 勾选或取消「在所有桌面显示」；默认开启并自动记住选择 |
-| ⌘Q | 快捷键退出 |
+本次及后续客户端项目代码采用 GNU Affero General Public License v3.0，见 [LICENSE](LICENSE)。既有 MIT 授权仍然有效，原声明保留于 [LICENSE-MIT-legacy](LICENSE-MIT-legacy)。第三方组件保留自己的许可，见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。项目名称与标识不表示 OpenAI 官方出品或背书。
 
-进度条颜色基于**剩余比例**：绿色（>40% 正常）/ 橙色（20-40% 接近上限）/ 红色（<20% 即将耗尽）。
+## 验证边界
 
-## 常见问题
-
-**Q：首次打开提示「无法验证开发者」？**
-A：应用使用 ad-hoc 签名，非 App Store 分发。两种解决方式（任选其一，仅需一次）：
-- 先将 App 从 DMG 拖到 Applications，再执行：`xattr -dr com.apple.quarantine "/Applications/CodexLimitMeter.app"`
-- 或前往 系统设置 → 隐私与安全性，点击「仍要打开」
-
-如命令提示 `No such file`，说明 App 尚未拖到 Applications。命令成功后，再从「应用程序」打开 App，无需重新安装。
-
-**Q：Finder 左侧为什么出现多个「Codex Limit Meter」磁盘？**
-A：每次打开一份 DMG 都会挂载一个只读安装磁盘。安装完成后没有推出、又重复打开其他 DMG，就会出现多个同名项目。请在 Finder 左侧逐个点击推出按钮；应用以后应从「应用程序」文件夹启动。
-
-**Q：悬浮窗显示「更新失败」？**
-A：请检查：① `codex` 命令是否可用 ② Codex 是否已登录 ③ 是否使用 ChatGPT 账号登录（非 API Key）。
-
-**Q：为什么没有显示 5 小时额度？**
-A：这表示 Codex 服务端当前没有返回 5 小时额度窗口，例如官方针对部分套餐临时取消了该限制。应用只展示实际存在的额度窗口；如果服务端以后恢复 5 小时窗口，该行会自动重新出现，无需修改配置或重新安装。
-
-**Q：App Server 会一直后台运行吗？**
-A：悬浮窗退出时会自动终止 app-server 子进程，不会残留。
-
-**Q：可以拖到外接显示器或其他 App 的全屏空间吗？**
-A：可以。悬浮窗支持跨显示器拖动，并可显示在其他 App 的全屏空间和 Stage Manager 分组中。
-
-**Q：切换 macOS 桌面时，如何只在一个桌面显示？**
-A：点击菜单栏图标，取消勾选「在所有桌面显示」。重新勾选后，悬浮窗会恢复在所有桌面显示；该选择会在重启后保留。
-
----
-
-想要修改源码、调试功能或参与贡献？请阅读 [开发指南](DEVELOPMENT.md)。
-
-## 项目文档
-
-- [协作规则](AGENTS.md)
-- [测试指南](TESTING.md)
-- [发布说明](DEPLOYMENT.md)
-- [环境变量说明](.env.example)
+源码测试和本地构建已验证；真实通知横幅、不同系统/硬件及首次账号连接仍取决于使用环境。源码发布不替代签名、公证或商店审核。
