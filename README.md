@@ -30,9 +30,20 @@ macOS 桌宠与菜单栏工具：查看 Codex 个人额度，关注公开重置�
 
 ## 当前发布范围
 
-这是新版客户端的 **AGPL-3.0 源码发布**，包含 Swift 源码、测试和本地桌宠资源。网站、服务器、浏览器扩展、开发者配置和凭据不在此仓库中。旧 Codex Limit Meter v1.1.3 及更早标签保留原 MIT 许可，已停止维护，界面与新版不同。
+这是新版客户端的 **AGPL-3.0 公开源码**，包含 Swift 源码、测试和本地桌宠资源。网站、服务器、浏览器扩展、开发者配置和凭据不在此仓库中。旧 Codex Limit Meter v1.1.3 及更早标签保留原 MIT 许可，已停止维护，界面与新版不同。
 
-本次未发布已签名或公证的安装包，也不代表 Mac App Store 已上架。
+## Mac 公开试用版
+
+[下载 Quota Orbit 1.3.0-beta.1（Apple 芯片）](https://github.com/koi-lee/codex-limit-meter/releases/download/v1.3.0-beta.1/Quota-Orbit-1.3.0-beta.1-arm64.dmg)
+
+Apple 芯片 · macOS 13+｜App Store 版尚未上架。此包使用 Developer ID 签名并经 Apple 公证；这是公开试用版，仍可能存在问题。
+
+1. 查看个人额度前，先安装并登录 Codex CLI（ChatGPT 账号）。本版不捆绑 CLI helper。
+2. 打开 DMG，将 Quota Orbit 拖到 Applications，再从 Applications 启动。
+3. 点击桌宠查看额度与公开消息；在 App 内主动开启通知。
+
+已有同名 App 时先退出并保留旧安装包，再替换。公开重置公告不保证个人额度已到账。反馈时请附系统版本和问题截图，不提供账号凭据。对应源码见 `v1.3.0-beta.1` 标签；安装包校验值见同一 Release 的 SHA256SUMS.txt。
+
 
 ## 本地构建
 

@@ -1,53 +1,19 @@
-# Codex Meter
+# Quota Orbit — Mac public beta
 
-A macOS desktop companion and menu bar app for Codex usage and public reset announcements.
+[Download 1.3.0-beta.1 for Apple silicon](https://github.com/koi-lee/codex-limit-meter/releases/download/v1.3.0-beta.1/Quota-Orbit-1.3.0-beta.1-arm64.dmg) · [中文](README.md)
 
-[中文](README.md) · [Quota Orbit](https://www.starshoreai.com/quota-orbit/)
+Requires Apple silicon and macOS 13 or later. The Developer ID signed and Apple-notarized beta is distributed outside the Mac App Store; the App Store edition is not available yet.
 
-## What does it look like?
+Install Codex CLI and sign in with a ChatGPT account before viewing personal quota. This beta does not bundle the CLI helper. Open the DMG, drag Quota Orbit into Applications, then launch it there. Quit an existing copy before replacing it and keep the previous installer for rollback. Enable notifications in the app if desired.
 
-A reading companion sits on your Mac desktop. Open its orbit panel to see your remaining Codex quota and when it recovers. This is a standalone macOS app.
+The desktop companion displays personal quota and public reset announcements. An announcement does not guarantee that your account has received a reset. Beta software may contain issues; include the OS version and a screenshot when reporting a problem, never credentials.
 
-### Remaining quota and recovery time
+The corresponding AGPL-3.0 source is the `v1.3.0-beta.1` tag. Verify the installer with the Release SHA256SUMS.txt. Server, website, browser extension and developer credentials are not included. Legacy v1.1.3 and earlier tags retain their MIT license and are discontinued.
 
-![Desktop companion with remaining quota and recovery time, using sample data](docs/images/desktop-quota.jpg)
+## Local build
 
-Click the character to open the panel and switch between quota, messages and changes. Quota is also available from the menu bar.
+With Xcode Command Line Tools and Swift 5.9+, run `swift test --disable-sandbox` then `./build-local.sh`. This produces an ad-hoc signed local app using a separate bundle ID. Set CODEX_BUILD_DIR to a fresh output path for another build.
 
-### Public reset messages
+`build-release.sh` builds the arm64 distribution app; release signing requires the developer's authorized Developer ID. Signing alone is not notarization. The release process notarizes and staples the app and DMG separately before upload.
 
-![Reset message panel and details in demo mode](docs/images/desktop-messages.jpg)
-
-Open message details to follow public reset announcements. Public announcements are separate from your personal quota and do not confirm that your account has received a reset.
-
-### Local quota changes
-
-![Quota history showing two sample changes](docs/images/desktop-changes.jpg)
-
-View quota changes in the current session. Recording starts over when the recovery cycle changes.
-
-> These are real screenshots of the client's demo mode, with Chinese UI. Quota, messages and times are sample data; demo reminders do not send system notifications. To read real quota with the source build, install and sign in to the Codex CLI on your Mac.
-
-## Source release
-
-This repository contains the macOS client, tests and bundled character resources under AGPL-3.0. The website, server, browser extension and developer credentials are excluded. Legacy v1.1.3 and earlier tags retain their MIT license and are no longer maintained.
-
-This release includes source only, with no notarized installer or claim of App Store availability.
-
-## Build locally
-
-Requires macOS 13+, Swift 5.9+ and Xcode Command Line Tools. Validated on Apple Silicon; Intel has not been tested on hardware.
-
-```sh
-swift test --disable-sandbox
-./build-local.sh
-open "dist/Codex Meter Open Source.app"
-```
-
-The script creates an ad-hoc signed app with a separate bundle identifier and never installs over your existing app. Use a fresh `CODEX_BUILD_DIR` when rebuilding. Install and sign in to the Codex CLI yourself; the App Store CLI helper is not bundled. Notifications are opt-in.
-
-Credentials and personal usage stay on your Mac. Public reset messages are announcements or third-party transcripts, not confirmation that every account received a reset. Network access and the upstream Codex response determine availability.
-
-## License
-
-Current client project code uses GNU AGPL v3.0; see LICENSE. Earlier MIT grants remain valid; see LICENSE-MIT-legacy. Third-party notices remain applicable. This is an independent project, not an official OpenAI product.
+See [LICENSE](LICENSE) and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

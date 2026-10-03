@@ -39,7 +39,59 @@ struct Announcement: Codable {
     func notificationTitle(chinese: Bool, previouslySent: Bool) -> String {
         let prefix = status == "withdrawn" ? (chinese ? "公告撤回：" : "Withdrawn: ")
             : previouslySent ? (chinese ? "公告更新：" : "Updated: ") : ""
-        return prefix + title.value(chinese)
+        return prefix + notificationCopy(chinese: chinese).title
+    }
+}
+
+// Notification copy describes the event, not the internal classification method.
+extension Announcement {
+    func notificationCopy(chinese: Bool, timeZone: TimeZone = .current) -> (title: String, body: String) {
+        let uncertain = title.zh.contains("相关线索") || title.zh.contains("上下文待确认")
+        let banked = ["备用", "重置券", "重置卡"].contains { title.zh.contains($0) }
+        let raw = summary.en.range(of: "reset", options: .caseInsensitive) != nil ? summary.en : summary.zh
+        let original = raw.components(separatedBy: "原文：").last ?? raw
+        let global = original.range(of: #"\bglobal reset\b"#, options: [.regularExpression, .caseInsensitive]) != nil
+        let scope = original.range(of: #"\ball paid (?:ChatGPT )?(?:accounts|users)\b"#, options: [.regularExpression, .caseInsensitive]) != nil
+            ? (chinese ? "适用：付费账号" : "Applies to paid accounts") : ""
+        if status == "withdrawn" {
+            return (chinese ? "Codex 重置消息" : "Codex reset update", chinese ? "此前消息已撤回，请查看最新公告。" : "The earlier announcement was withdrawn. Check the latest update.")
+        }
+        if uncertain {
+            return (chinese ? "Codex 重置消息待确认" : "Codex reset update unconfirmed", chinese ? "时间与范围尚未确认，点击查看消息详情。" : "Timing and scope are unconfirmed. Open message details.")
+        }
+        if banked {
+            return (chinese ? "Codex 重置卡有新消息" : "Codex reset credit update", chinese ? "请在账号设置中查看是否到账；使用后才会重置。" : "Check account settings for a credit. Redeem it to reset.")
+        }
+        if isResetCompleted {
+            return (chinese ? "Codex 已宣布重置完成" : "Codex reset announced complete", chinese ? "公开消息已宣布完成，请检查自己的账号额度。" : "Completion was announced. Check your own account quota.")
+        }
+        if isResetPreview {
+            let target = resetAt ?? explicitNotificationTime(original)
+            let heading = chinese ? (global ? "Codex 全局重置已预告" : "Codex 重置已预告") : "Codex reset announced"
+            guard let target else { return (heading, chinese ? "具体时间尚未公布。" : "The exact time has not been announced.") }
+            let formatter = DateFormatter()
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+            formatter.timeZone = timeZone
+            formatter.dateFormat = "MM/dd HH:mm"
+            let zone = timeZone.identifier == "Asia/Shanghai" ? (chinese ? "北京时间" : "Beijing time") : timeZone.identifier
+            let timing = (chinese ? "预计时间：" : "Expected: ") + formatter.string(from: target) + " · " + zone
+            return (heading, timing + (scope.isEmpty ? "" : " · " + scope))
+        }
+        return (chinese ? "Codex 有新动态" : "Codex update", chinese ? "点击查看消息详情。" : "Open for details.")
+    }
+
+    private func explicitNotificationTime(_ text: String) -> Date? {
+        let pattern = #"\btomorrow\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)\s+(PST|PDT)\b"#
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive),
+              let match = regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)) else { return nil }
+        func group(_ i: Int) -> String { Range(match.range(at: i), in: text).map { String(text[$0]) } ?? "" }
+        guard let hour = Int(group(1)), (1...12).contains(hour) else { return nil }
+        let minute = Int(group(2)) ?? 0
+        guard minute < 60 else { return nil }
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: group(4).uppercased() == "PST" ? -28800 : -25200)!
+        guard let tomorrow = calendar.date(byAdding: .day, value: 1, to: publishedAt) else { return nil }
+        return calendar.date(bySettingHour: hour % 12 + (group(3).lowercased() == "pm" ? 12 : 0), minute: minute, second: 0, of: tomorrow)
     }
 }
 
@@ -260,8 +312,8 @@ final class AnnouncementService: NSObject, ObservableObject, UNUserNotificationC
         formatter.dateFormat = "HH:mm:ss"
         let time = formatter.string(from: Date())
         let content = UNMutableNotificationContent()
-        content.title = "Codex Meter · 测试提醒 " + time
-        content.body = "这是一条通知测试，不是额度重置预告。点击返回消息星盘。"
+        content.title = chinese() ? "Codex Meter · 测试通知" : "Codex Meter · Test notification"
+        content.body = chinese() ? "通知测试，不代表发生重置。点击返回消息星盘。" : "Notification test only, not a reset. Open the message constellation."
         content.userInfo = ["codexMeterTest": true]
         do {
             try await deliver(UNNotificationRequest(identifier: "codex-meter.test." + UUID().uuidString, content: content, trigger: nil))
@@ -333,11 +385,8 @@ final class AnnouncementService: NSObject, ObservableObject, UNUserNotificationC
             guard enabled, !demoSuspended, generation == demoGeneration else { break }
             let content = UNMutableNotificationContent()
             content.title = entry.notificationTitle(chinese: chinese(), previouslySent: sent[entry.id] != nil)
-            content.body = entry.summary.value(chinese()) + "\n" + (chinese() ? "适用范围：" : "Applies to: ") + entry.audience.value(chinese()) + "\n" + (chinese() ? "原文：" : "Source: ") + entry.sourceURL
-            if chinese() {
-                let copy = PetAnnouncementCopy(entry, historical: false)
-                content.body = copy.brief + "\n" + copy.timing + "\n适用范围：" + entry.audience.zh
-            }
+            content.subtitle = Announcement.source(entry.sourceURL)?.host ?? ""
+            content.body = entry.notificationCopy(chinese: chinese()).body
             content.userInfo = ["sourceURL": entry.sourceURL, "announcementID": entry.id]
             let request = UNNotificationRequest(identifier: "announcement.\(entry.id).revision.\(entry.revision)", content: content, trigger: nil)
             do {

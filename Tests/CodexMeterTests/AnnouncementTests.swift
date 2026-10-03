@@ -60,8 +60,10 @@ private func fixture(revision: Int = 1, status: String = "active", expires: Stri
     #expect(delivered.isEmpty)
     await service.setEnabled(true)
     #expect(delivered.count == 1)
-    #expect(delivered[0].content.body.contains("适用范围"))
+    #expect(delivered[0].content.body.contains("预计时间："))
+    #expect(!delivered[0].content.body.contains("不保证"))
     #expect(delivered[0].content.userInfo["sourceURL"] as? String == "https://openai.com/")
+    #expect(delivered[0].content.subtitle == "openai.com")
     await service.check()
     #expect(delivered.count == 1)
     data = fixture(revision: 2)
@@ -336,7 +338,7 @@ private func signalFixture(_ text: String, fetched: String = "2026-09-09T00:00:0
     status = .authorized
     await service.sendTestReminder()
     #expect(delivered.count == 1)
-    #expect(delivered.first?.content.title.contains("测试提醒") == true)
+    #expect(delivered.first?.content.title == "Codex Meter · 测试通知")
     #expect(service.remindersReady)
     #expect(defaults.dictionary(forKey: "announcements.sent") == nil)
     #expect(service.entries.isEmpty)
@@ -388,4 +390,25 @@ private func signalFixture(_ text: String, fetched: String = "2026-09-09T00:00:0
     #expect(fetched > 0)
     #expect(delivered == 0)
     service.stop()
+}
+
+@Test func conciseNotificationCopyHidesClassificationAndPreservesUncertainty() throws {
+    let base = try #require(AnnouncementFeed.parse(fixture()).announcements.first)
+    func entry(_ title: String, original: String = "", status: String = "active") -> Announcement {
+        Announcement(id: base.id, revision: 1, title: .init(zh: title, en: title), summary: .init(zh: original, en: original), audience: base.audience, sourceURL: base.sourceURL, publishedAt: ISO8601DateFormatter().date(from: "2026-10-02T02:14:51Z")!, expiresAt: base.expiresAt, resetAt: nil, status: status)
+    }
+    let clue = entry("Codex：重置相关线索（AI语义辅助）")
+    #expect(clue.notificationTitle(chinese: true, previouslySent: false) == "Codex 重置消息待确认")
+    #expect(!clue.notificationCopy(chinese: true).body.contains("AI"))
+    let planned = entry("重置预告（AI语义辅助）", original: "Global reset landing tomorrow 10am PST for all paid ChatGPT accounts.")
+    let copy = planned.notificationCopy(chinese: true, timeZone: TimeZone(identifier: "Asia/Shanghai")!)
+    #expect(copy.title == "Codex 全局重置已预告")
+    #expect(copy.body == "预计时间：10/03 02:00 · 北京时间 · 适用：付费账号")
+    #expect(entry("重置预告").notificationCopy(chinese: true).body == "具体时间尚未公布。")
+    #expect(entry("备用重置相关动态").notificationCopy(chinese: true).body.contains("是否到账"))
+    #expect(entry("重置完成消息").notificationCopy(chinese: true).title.contains("已宣布"))
+    #expect(entry("重置完成消息").notificationCopy(chinese: true).body == "公开消息已宣布完成，请检查自己的账号额度。")
+    #expect(!copy.body.contains("\n"))
+    #expect(clue.notificationCopy(chinese: true).body.contains("消息详情"))
+    #expect(entry("重置预告", status: "withdrawn").notificationTitle(chinese: true, previouslySent: true).hasPrefix("公告撤回："))
 }
